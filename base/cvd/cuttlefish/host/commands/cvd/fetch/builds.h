@@ -16,11 +16,18 @@
 #pragma once
 
 #include <optional>
+#include <string>
+#include <vector>
 
 #include "cuttlefish/host/libs/web/android_build.h"
 #include "cuttlefish/host/libs/web/chrome_os_build_string.h"
 
 namespace cuttlefish {
+
+struct ArtifactBuild {
+  Build build;
+  std::string target_filepath;
+};
 
 struct Builds {
   std::optional<Build> default_build;
@@ -33,6 +40,7 @@ struct Builds {
   std::optional<Build> otatools;
   std::optional<Build> test_suites;
   std::optional<ChromeOsBuildString> chrome_os;
+  std::vector<ArtifactBuild> artifact_builds;
 };
 
 }  // namespace cuttlefish

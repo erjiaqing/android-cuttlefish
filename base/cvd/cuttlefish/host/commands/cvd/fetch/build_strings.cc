@@ -15,8 +15,12 @@
 
 #include "cuttlefish/host/commands/cvd/fetch/build_strings.h"
 
+#include <string>
+#include <vector>
+
 #include "cuttlefish/host/commands/cvd/fetch/fetch_cvd_parser.h"
 #include "cuttlefish/host/commands/cvd/fetch/get_optional.h"
+#include "cuttlefish/host/commands/cvd/fetch/vector_flags.h"
 #include "cuttlefish/host/libs/web/android_build_string.h"
 
 namespace cuttlefish {
@@ -35,6 +39,8 @@ BuildStrings BuildStrings::Create(const VectorFlags& flags, const int index) {
       .otatools_build = GetOptional(flags.otatools_build, index),
       .test_suites_build = GetOptional(flags.test_suites_build, index),
       .chrome_os_build = GetOptional(flags.chrome_os_build, index),
+      .artifact_builds = GetOptional(flags.artifact_build, index)
+                             .value_or(std::vector<ArtifactBuildString>{}),
   };
   std::string possible_boot_artifact =
       GetOptional(flags.boot_artifact, index).value_or("");

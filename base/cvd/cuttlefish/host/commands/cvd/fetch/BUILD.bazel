@@ -88,6 +88,7 @@ cf_cc_library(
     deps = [
         "//cuttlefish/host/commands/cvd/fetch:fetch_cvd_parser",
         "//cuttlefish/host/commands/cvd/fetch:get_optional",
+        "//cuttlefish/host/commands/cvd/fetch:vector_flags",
         "//cuttlefish/host/libs/web:android_build_string",
         "//cuttlefish/host/libs/web:chrome_os_build_string",
     ],
@@ -229,6 +230,7 @@ cf_cc_test(
         "//cuttlefish/host/commands/cvd/fetch:fetch_tracer",
         "//cuttlefish/host/commands/cvd/fetch:target_directories",
         "//cuttlefish/host/libs/config:fetcher_config",
+        "//cuttlefish/host/libs/config:file_source",
         "//cuttlefish/host/libs/web:android_build",
         "//cuttlefish/host/libs/web:android_build_string",
         "//cuttlefish/host/libs/web:build_api",
@@ -299,7 +301,9 @@ cf_cc_test(
     name = "fetch_cvd_parser_test",
     srcs = ["fetch_cvd_parser_test.cpp"],
     deps = [
+        "//cuttlefish/host/commands/cvd/fetch:build_strings",
         "//cuttlefish/host/commands/cvd/fetch:fetch_cvd_parser",
+        "//cuttlefish/host/commands/cvd/fetch:vector_flags",
         "//cuttlefish/host/libs/web:android_build_string",
         "//cuttlefish/result",
         "//cuttlefish/result:assert",
@@ -439,5 +443,6 @@ cf_cc_library(
         "//cuttlefish/host/libs/web:android_build_string",
         "//cuttlefish/host/libs/web:chrome_os_build_string",
         "//cuttlefish/result",
+        "@abseil-cpp//absl/strings",
     ],
 )

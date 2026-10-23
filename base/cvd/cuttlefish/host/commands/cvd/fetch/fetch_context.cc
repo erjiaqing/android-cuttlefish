@@ -446,4 +446,18 @@ std::optional<FetchBuildContext> FetchContext::TestSuitesBuild() {
   }
 }
 
+std::vector<FetchArtifactTarget> FetchContext::ArtifactBuilds() {
+  std::vector<FetchArtifactTarget> result;
+  result.reserve(builds_.artifact_builds.size());
+  for (const ArtifactBuild& artifact_build : builds_.artifact_builds) {
+    result.push_back(FetchArtifactTarget{
+        .context = FetchBuildContext(
+            *this, artifact_build.build, target_directories_.root,
+            FileSource::ARTIFACT_BUILD, tracer_.NewTrace("Artifact")),
+        .target_filepath = artifact_build.target_filepath,
+    });
+  }
+  return result;
+}
+
 }  // namespace cuttlefish

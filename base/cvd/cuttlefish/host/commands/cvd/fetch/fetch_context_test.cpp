@@ -21,6 +21,7 @@
 #include <map>
 #include <optional>
 #include <string>
+#include <vector>
 
 #include "android-base/file.h"
 #include "gmock/gmock.h"
@@ -33,6 +34,7 @@
 #include "cuttlefish/host/commands/cvd/fetch/fetch_tracer.h"
 #include "cuttlefish/host/commands/cvd/fetch/target_directories.h"
 #include "cuttlefish/host/libs/config/fetcher_config.h"
+#include "cuttlefish/host/libs/config/file_source.h"
 #include "cuttlefish/host/libs/web/android_build.h"
 #include "cuttlefish/host/libs/web/android_build_string.h"
 #include "cuttlefish/host/libs/web/build_api.h"
@@ -282,6 +284,78 @@ TEST_F(FetchArtifactDirectoryTest, ExtractOneMissingMemberFails) {
   ASSERT_THAT(img_zip.Download(), IsOk());
   EXPECT_THAT(img_zip.ExtractOne("missing.img"), IsError());
   EXPECT_THAT(img_zip.ExtractOne("nested"), IsError());
+}
+
+TEST(FetchContextTest, ArtifactBuildsDownloadsAndRecordsFileSource) {
+  TemporaryDir temp_dir;
+  MockBuildApi mock_api;
+  const TargetDirectories target_directories = {.root = temp_dir.path};
+  const Builds builds = {
+      .artifact_builds =
+          {
+              ArtifactBuild{
+                  .build = DeviceBuild{.id = "111",
+                                       .target = "cf_x86_64_phone-userdebug",
+                                       .product = "cf_x86_64_phone",
+                                       .filepath = "opendice.aml"},
+                  .target_filepath = "acpi/opendice_custom.aml",
+              },
+              ArtifactBuild{
+                  .build = DeviceBuild{.id = "222",
+                                       .target = "cf_x86_64_phone-userdebug",
+                                       .product = "cf_x86_64_phone",
+                                       .filepath = "overlay.dtbo"},
+                  .target_filepath = "overlay.dtbo",
+              },
+          },
+  };
+  EXPECT_CALL(mock_api,
+              DownloadFile(::testing::_, temp_dir.path, "opendice.aml"))
+      .WillOnce([](const Build&, const std::string& dir,
+                   const std::string& artifact_name) -> Result<std::string> {
+        const std::string path = dir + "/" + artifact_name;
+        CF_EXPECT(WriteNewFile(path, "aml_data"));
+        return path;
+      });
+  EXPECT_CALL(mock_api,
+              DownloadFile(::testing::_, temp_dir.path, "overlay.dtbo"))
+      .WillOnce([](const Build&, const std::string& dir,
+                   const std::string& artifact_name) -> Result<std::string> {
+        const std::string path = dir + "/" + artifact_name;
+        CF_EXPECT(WriteNewFile(path, "dtbo_data"));
+        return path;
+      });
+
+  FetcherConfig fetcher_config;
+  FetchTracer tracer;
+  FetchContext fetch_context(mock_api, target_directories, builds,
+                             fetcher_config, tracer);
+
+  std::vector<FetchArtifactTarget> artifact_targets =
+      fetch_context.ArtifactBuilds();
+  ASSERT_EQ(artifact_targets.size(), 2);
+
+  for (FetchArtifactTarget& target : artifact_targets) {
+    ASSERT_TRUE(target.context.GetFilepath().has_value());
+    ASSERT_THAT(target.context.Artifact(*target.context.GetFilepath())
+                    .DownloadTo(target.target_filepath),
+                IsOk());
+  }
+
+  EXPECT_THAT(ReadFileContents(std::string(temp_dir.path) +
+                               "/acpi/opendice_custom.aml"),
+              IsOkAndValue("aml_data"));
+  EXPECT_THAT(ReadFileContents(std::string(temp_dir.path) + "/overlay.dtbo"),
+              IsOkAndValue("dtbo_data"));
+
+  const std::map<std::string, CvdFile> files = fetcher_config.get_cvd_files();
+  ASSERT_THAT(files, Contains(Key("acpi/opendice_custom.aml")));
+  EXPECT_EQ(files.at("acpi/opendice_custom.aml").source,
+            FileSource::ARTIFACT_BUILD);
+  EXPECT_EQ(files.at("acpi/opendice_custom.aml").build_id, "111");
+  ASSERT_THAT(files, Contains(Key("overlay.dtbo")));
+  EXPECT_EQ(files.at("overlay.dtbo").source, FileSource::ARTIFACT_BUILD);
+  EXPECT_EQ(files.at("overlay.dtbo").build_id, "222");
 }
 
 }  // namespace

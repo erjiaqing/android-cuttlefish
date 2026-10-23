@@ -16,8 +16,10 @@
 #pragma once
 
 #include <optional>
+#include <vector>
 
 #include "cuttlefish/host/commands/cvd/fetch/fetch_cvd_parser.h"
+#include "cuttlefish/host/commands/cvd/fetch/vector_flags.h"
 #include "cuttlefish/host/libs/web/android_build_string.h"
 #include "cuttlefish/host/libs/web/chrome_os_build_string.h"
 
@@ -37,6 +39,7 @@ struct BuildStrings {
   std::optional<BuildString> test_suites_build;
   std::optional<BuildString> host_package_build;
   std::optional<ChromeOsBuildString> chrome_os_build;
+  std::vector<ArtifactBuildString> artifact_builds;
 };
 
 }  // namespace cuttlefish

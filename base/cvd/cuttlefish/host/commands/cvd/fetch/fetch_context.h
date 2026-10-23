@@ -111,6 +111,11 @@ class FetchBuildContext {
 
 std::ostream& operator<<(std::ostream&, const FetchBuildContext&);
 
+struct FetchArtifactTarget {
+  FetchBuildContext context;
+  std::string target_filepath;
+};
+
 /**
  * References common state used by most download operations and produces
  * `FetchBuildContext` instances.
@@ -129,6 +134,7 @@ class FetchContext {
   std::optional<FetchBuildContext> AndroidEfiLoaderBuild();
   std::optional<FetchBuildContext> OtaToolsBuild();
   std::optional<FetchBuildContext> TestSuitesBuild();
+  std::vector<FetchArtifactTarget> ArtifactBuilds();
 
  private:
   friend class FetchArtifact;

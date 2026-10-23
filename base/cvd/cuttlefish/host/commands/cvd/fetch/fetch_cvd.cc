@@ -128,6 +128,18 @@ Result<std::optional<Build>> GetBuildHelper(
 
 Result<Builds> GetBuilds(BuildApi& build_api,
                          const BuildStrings& build_sources) {
+  std::vector<ArtifactBuild> artifact_builds;
+  artifact_builds.reserve(build_sources.artifact_builds.size());
+  for (const ArtifactBuildString& artifact : build_sources.artifact_builds) {
+    std::optional<Build> resolved_build = CF_EXPECT(GetBuildHelper(
+        build_api, std::optional<BuildString>(artifact.build_string),
+        kDefaultBuildTarget));
+    CF_EXPECT(resolved_build.has_value());
+    artifact_builds.push_back(ArtifactBuild{
+        .build = std::move(*resolved_build),
+        .target_filepath = artifact.target_filepath,
+    });
+  }
   return Builds{
       .default_build = CF_EXPECT(GetBuildHelper(
           build_api, build_sources.default_build, kDefaultBuildTarget)),
@@ -150,6 +162,7 @@ Result<Builds> GetBuilds(BuildApi& build_api,
       .test_suites = CF_EXPECT(GetBuildHelper(
           build_api, build_sources.test_suites_build, kDefaultBuildTarget)),
       .chrome_os = build_sources.chrome_os_build,
+      .artifact_builds = std::move(artifact_builds),
   };
 }
 
@@ -471,6 +484,17 @@ Result<void> FetchChromeOsTarget(
   return {};
 }
 
+Result<void> DownloadArtifactTarget(FetchBuildContext& context,
+                                    const std::string& target_filepath) {
+  const std::optional<std::string> filepath = context.GetFilepath();
+  CF_EXPECT(filepath.has_value() && !filepath->empty(),
+            "Artifact build must specify a filepath for " << context);
+  LOG(INFO) << "Downloading " << *filepath << " to " << target_filepath
+            << " for " << context;
+  CF_EXPECT(context.Artifact(*filepath).DownloadTo(target_filepath));
+  return {};
+}
+
 Result<void> FetchTarget(FetchContext& fetch_context,
                          const DownloadFlags& flags,
                          const bool keep_downloaded_archives) {
@@ -513,6 +537,11 @@ Result<void> FetchTarget(FetchContext& fetch_context,
   if (std::optional<FetchBuildContext> context =
           fetch_context.VendorBootImageBuild()) {
     CF_EXPECT(FetchVendorBootImageTarget(*context, keep_downloaded_archives));
+  }
+
+  for (FetchArtifactTarget& artifact_target : fetch_context.ArtifactBuilds()) {
+    CF_EXPECT(DownloadArtifactTarget(artifact_target.context,
+                                     artifact_target.target_filepath));
   }
 
   return {};

@@ -16,6 +16,7 @@
 #pragma once
 
 #include <optional>
+#include <ostream>
 #include <string>
 #include <vector>
 
@@ -30,6 +31,16 @@ inline constexpr bool kDefaultDownloadImgZip = true;
 inline constexpr bool kDefaultDownloadTargetFilesZip = false;
 // TODO: schuffelen - Enable this by default.
 inline constexpr bool kDefaultDynamicSuperImageFragments = false;
+
+struct ArtifactBuildString {
+  BuildString build_string;
+  std::string target_filepath;
+
+  bool operator==(const ArtifactBuildString&) const = default;
+};
+
+std::ostream& operator<<(std::ostream& out,
+                         const ArtifactBuildString& artifact_build_string);
 
 struct VectorFlags {
   std::vector<Flag> Flags();
@@ -46,6 +57,7 @@ struct VectorFlags {
   std::vector<std::optional<BuildString>> otatools_build;
   std::vector<std::optional<BuildString>> test_suites_build;
   std::vector<std::optional<ChromeOsBuildString>> chrome_os_build;
+  std::vector<std::vector<ArtifactBuildString>> artifact_build;
   std::vector<bool> download_img_zip;
   std::vector<bool> download_target_files_zip;
   std::vector<std::string> boot_artifact;
